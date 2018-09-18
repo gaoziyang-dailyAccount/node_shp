@@ -1,8 +1,15 @@
-//先只读二维的最普通的shp文件
+
 const Bytes = require('./Bytes');
 const GeomType = require('./ArcGISGeomType');
 
 const shpReader = {
+
+    /**
+     * @description read *.shp's header information
+     * @author gaozy
+     * @param {*} fileBuffer
+     * @returns
+     */
     headReader(fileBuffer) {
         //文件编码 9994
         let endIdx = 0;
@@ -59,6 +66,15 @@ const shpReader = {
             endIdx
         }
     },
+
+    /**
+     * @description read *.shp's shape information
+     * @author gaozy
+     * @param {*} fileBuffer
+     * @param {*} type
+     * @param {*} startIdx
+     * @returns
+     */
     featuresReader(fileBuffer, type, startIdx) {
         switch (type) {
             case 'Point':
@@ -67,10 +83,34 @@ const shpReader = {
                 return this._polylineReader(fileBuffer, startIdx);
             case 'Polygon':
                 return this._polygonReader(fileBuffer, startIdx);
+            case 'Null Shape':
+                return this._nullShapeReader(fileBuffer, startIdx);
             default:
                 return
         }
     },
+
+    /**
+     * @description return null shape object
+     * @author gaozy
+     * @param {*} fileBuffer
+     * @param {*} startIdx
+     * @returns
+     */
+    _nullShapeReader(fileBuffer, startIdx) {
+        return {
+            error: true,
+            message : 'Null Shape'
+        }
+    }
+
+    /**
+     * @description read polygon shape
+     * @author gaozy
+     * @param {*} fileBuffer
+     * @param {*} startIdx
+     * @returns
+     */
     _polygonReader(fileBuffer, startIdx) {
         let polyGroups = [], endIdx = startIdx;
         while (endIdx < fileBuffer.length) {
@@ -80,6 +120,14 @@ const shpReader = {
         }
         return polyGroups;
     },
+
+    /**
+     * @description read linestring shape
+     * @author gaozy
+     * @param {*} fileBuffer
+     * @param {*} startIdx
+     * @returns
+     */
     _polylineReader(fileBuffer, startIdx) {
         let lineGroups = [], endIdx = startIdx;
         while (endIdx < fileBuffer.length) {
@@ -89,6 +137,14 @@ const shpReader = {
         }
         return lineGroups;
     },
+
+    /**
+     * @description read point shape
+     * @author gaozy
+     * @param {*} fileBuffer
+     * @param {*} startIdx
+     * @returns
+     */
     _pointReader(fileBuffer, startIdx) {
         let pointGroups = [], endIdx = startIdx;
         while (endIdx < fileBuffer.length) {
@@ -99,6 +155,14 @@ const shpReader = {
         return pointGroups;
     }
 }
+
+/**
+ * @description read one polygon
+ * @author gaozy
+ * @param {*} fileBuffer
+ * @param {*} startIdx
+ * @returns
+ */
 function polygonPartReader(fileBuffer, startIdx) {
     let endIdx = startIdx;
     let recordNumber = fileBuffer.readIntBE(endIdx, Bytes.INT);
@@ -107,25 +171,25 @@ function polygonPartReader(fileBuffer, startIdx) {
     endIdx += Bytes.INT;
     let shapeType = GeomType[fileBuffer.readIntLE(endIdx, Bytes.INT)];
     endIdx += Bytes.INT;
-    //读这个面的bounds
+    //read bounds
     let bbox = [];
     for (let bboxIdx = 0; bboxIdx < 4; bboxIdx++) {
         bbox.push(fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE));
         endIdx += Bytes.DOUBLE;
     };
-    //读子段的个数
+    //read children parts' number
     let childPartsNumber = fileBuffer.readIntLE(endIdx, Bytes.INT);
     endIdx += Bytes.INT;
-    //读总点数(x,y)
+    //read total points => (x, y)
     let totalPointsLength = fileBuffer.readIntLE(endIdx, Bytes.INT);
     endIdx += Bytes.INT;
-    //读每个子面的起始位置
+    //read children polygon start index
     let childPartsStart = [];
     for (let i = 0; i < childPartsNumber; i++) {
         childPartsStart.push(fileBuffer.readIntLE(endIdx, Bytes.INT));
         endIdx += Bytes.INT;
     }
-    //读地理坐标
+    //read coordinates
     let lineArray = [];
     for (let i = 0; i < totalPointsLength; i++) {
         let coordinate = [];
@@ -135,7 +199,7 @@ function polygonPartReader(fileBuffer, startIdx) {
         endIdx += Bytes.DOUBLE;
         lineArray.push(coordinate);
     }
-    //处理子段部分
+    //parse coordinates to geojson coordinates
     let coordinates = [];
     for (let partnum = 0, len = childPartsStart.length; partnum < len; partnum++) {
         let startIdx = childPartsStart[partnum], endIdx = childPartsStart[partnum + 1];
@@ -159,6 +223,14 @@ function polygonPartReader(fileBuffer, startIdx) {
     }
 
 }
+
+/**
+ * @description read one linestring
+ * @author gaozy
+ * @param {*} fileBuffer
+ * @param {*} startIdx
+ * @returns
+ */
 function polylinePartReader(fileBuffer, startIdx) {
     let endIdx = startIdx;
     let recordNumber = fileBuffer.readIntBE(endIdx, Bytes.INT);
@@ -167,25 +239,25 @@ function polylinePartReader(fileBuffer, startIdx) {
     endIdx += Bytes.INT;
     let shapeType = GeomType[fileBuffer.readIntLE(endIdx, Bytes.INT)];
     endIdx += Bytes.INT;
-    //读这条线的bounds
+    //read bounds
     let bbox = [];
     for (let bboxIdx = 0; bboxIdx < 4; bboxIdx++) {
         bbox.push(fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE));
         endIdx += Bytes.DOUBLE;
     };
-    //读子段的个数
+    //read children parts' numbers
     let childPartsNumber = fileBuffer.readIntLE(endIdx, Bytes.INT);
     endIdx += Bytes.INT;
-    //读总点数(x,y)
+    //read total points' numbers
     let totalPointsLength = fileBuffer.readIntLE(endIdx, Bytes.INT);
     endIdx += Bytes.INT;
-    //读每个子段的起始位置
+    //read children parts' start index
     let childPartsStart = [];
     for (let i = 0; i < childPartsNumber; i++) {
         childPartsStart.push(fileBuffer.readIntLE(endIdx, Bytes.INT));
         endIdx += Bytes.INT;
     }
-    //读地理坐标
+    //read coordinates
     let lineArray = [];
     for (let i = 0; i < totalPointsLength; i++) {
         let coordinate = [];
@@ -195,7 +267,7 @@ function polylinePartReader(fileBuffer, startIdx) {
         endIdx += Bytes.DOUBLE;
         lineArray.push(coordinate);
     }
-    //转换多线的部分
+    //parse coordinates to geojson coordinates
     let coordinates = [];
     if (childPartsStart.length === 1) {
         coordinates = lineArray;
@@ -223,6 +295,14 @@ function polylinePartReader(fileBuffer, startIdx) {
         endIdx
     }
 }
+
+/**
+ * @description read one point
+ * @author gaozy
+ * @param {*} fileBuffer
+ * @param {*} startIdx
+ * @returns
+ */
 function pointPartReader(fileBuffer, startIdx) {
     let endIdx = startIdx, coordinate = [];
     let recordNumber = fileBuffer.readIntBE(endIdx, Bytes.INT);
@@ -231,8 +311,10 @@ function pointPartReader(fileBuffer, startIdx) {
     endIdx += Bytes.INT;
     let shapeType = GeomType[fileBuffer.readIntLE(endIdx, Bytes.INT)];
     endIdx += Bytes.INT;
+    //read x
     coordinate[0] = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
     endIdx += Bytes.DOUBLE;
+    //read y
     coordinate[1] = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
     endIdx += Bytes.DOUBLE;
 

@@ -1,5 +1,5 @@
 const GeomType = {
-    0: false,//(Null Shape)
+    0: 'Null Shape',//(Null Shape)
     1: 'Point',
     3: 'PolyLine',
     5: 'Polygon',
