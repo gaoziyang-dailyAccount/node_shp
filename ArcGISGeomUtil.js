@@ -11,43 +11,43 @@ const shpReader = {
      * @returns
      */
     headReader(fileBuffer) {
-        //文件编码 9994
+        //filecode 9994
         let endIdx = 0;
         let fileCode = fileBuffer.readIntBE(endIdx, Bytes.INT);
         endIdx += Bytes.INT;
-        //第四个字节向后的有5个unset 即空的Int4
+        //unset 
         endIdx += 5 * Bytes.INT;
-        //文件长度
+        //file length
         let fileLength = fileBuffer.readIntBE(endIdx, Bytes.INT);
         endIdx += Bytes.INT;
-        //文件编码
+        //file version
         let fileVersion = fileBuffer.readIntLE(endIdx, Bytes.INT);
         endIdx += Bytes.INT;
-        //文件要素的几何类型
+        //shape type
         let geoType = GeomType[fileBuffer.readIntLE(endIdx, Bytes.INT)];
         endIdx += Bytes.INT;
-        //外包最小x
+        //bounds minX
         let xMin = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
-        //外包最小y
+        //bounds minY
         let yMin = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
-        //外包最大x
+        //bounds maxX
         let xMax = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
-        //外包最大y
+        //bounds maxY
         let yMax = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
-        //外包最小z
+        //bounds minZ
         let zMin = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
-        //外包最大z
+        //bounds maxZ
         let zMax = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
-        //最小Measure值
+        ///bounds minM
         let mMin = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
-        //最大Measure值
+        //bounds maxM
         let mMax = fileBuffer.readDoubleLE(endIdx, Bytes.DOUBLE);
         endIdx += Bytes.DOUBLE;
         return {
