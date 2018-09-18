@@ -1,3 +1,6 @@
+/**
+ * arcgis shape map
+ */
 const GeomType = {
     0: 'Null Shape',//(Null Shape)
     1: 'Point',
