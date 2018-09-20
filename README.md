@@ -1,2 +1,2 @@
 # node_shp
-a resolution for read ArcGIS *.shp using native nodejs 
+A way to read *.shp files from native nodejs 
